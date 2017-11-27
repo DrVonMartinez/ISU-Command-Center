@@ -45,6 +45,10 @@ void CombatCommander::onFrame(const std::vector<UnitTag> & combatUnits)
     {
         m_attackStarted = shouldWeStartAttacking();
     }
+	if (m_attackStarted && (int)m_combatUnits.size() == 0)
+	{
+		shouldWeStartAttacking();//cancels attacks
+	}
 
     m_combatUnits = combatUnits;
 
@@ -62,8 +66,39 @@ void CombatCommander::onFrame(const std::vector<UnitTag> & combatUnits)
 bool CombatCommander::shouldWeStartAttacking()
 {
     // TODO: make this more clever
-    // For now: start attacking when we have more than 10 combat units
-    return m_combatUnits.size() >= m_bot.Config().CombatUnitsForAttack;
+    //15fps 3 minutes
+	int firstAttack = 15 * 60 * 3;//~2minutes
+	int followUp = 15 * 30 * 7;
+	static int attackCheckCount = 0;
+	static bool firstAttackFinished = false;
+	if (m_attackStarted && (int)m_combatUnits.size() <= 3)
+	{
+		firstAttackFinished = true;
+		m_attackStarted = false;
+		return false;
+	}
+
+	if (attackCheckCount < followUp && firstAttackFinished)
+	{
+		attackCheckCount++;
+		return false;
+	}
+	else if(attackCheckCount<(firstAttack) &&!firstAttackFinished)
+	{
+		attackCheckCount++;
+		return false;
+	}
+	if (attackCheckCount >= followUp && firstAttackFinished)
+	{
+		attackCheckCount = 0;
+		return true;
+	}
+	else if(attackCheckCount>=(firstAttack) && !firstAttackFinished)
+	{
+		attackCheckCount = 0;
+		return true;
+	}
+	return false;
 }
 
 void CombatCommander::updateIdleSquad()
